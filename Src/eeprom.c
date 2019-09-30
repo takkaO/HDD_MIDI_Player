@@ -6,32 +6,77 @@
  */
 
 #include "eeprom.h"
-#include "usart.h"
 
-void Save_Settings(DATA_STRUCTURE ds){
-	uint16_t slave_addr = 0b10100000;
-	uint8_t d[EEPROM_DATA_LENGTH] = {0, 0, 1, 2, 3, 4, 5, 6};
-	HAL_StatusTypeDef ret = HAL_BUSY;
-	while(ret != HAL_OK){
-		ret = HAL_I2C_IsDeviceReady(&hi2c1, slave_addr, 1, HAL_MAX_DELAY);
-	}
+I2C_HandleTypeDef *hi2c;
 
-	println("f");
-	HAL_I2C_Master_Transmit(&hi2c1, slave_addr, &d, EEPROM_DATA_LENGTH, 100);
-	println("w");
-	while(HAL_I2C_IsDeviceReady(&hi2c1, slave_addr, 5, 100) != HAL_OK);
-	println("c");
+void EEPROM_Initialize(I2C_HandleTypeDef *_hi2c){
+	hi2c = _hi2c;
 }
 
-DATA_STRUCTURE Load_Settings(uint16_t addr){
+
+
+void Save_Settings(DATA_STRUCTURE ds, uint16_t size){
+#ifdef EEPROM_USE_LCD
+	// Need initialize before.
+	LCD_Clear();
+	LCD_Set_Position(1, 2);
+	LCD_puts("Wait EEPROM...");
+#endif
+	while(HAL_I2C_IsDeviceReady(hi2c, SLAVE_ADDRESS, 1, 10) != HAL_OK);
+
+	HAL_I2C_Master_Transmit(hi2c, SLAVE_ADDRESS, (uint8_t *) &ds.data, size, 100);
+
+#ifdef EEPROM_USE_LCD
+	LCD_Clear();
+	LCD_Set_Position(1, 1);
+	LCD_puts("Write done!");
+	LCD_Set_Position(1, 2);
+	LCD_puts("Wait EEPROM...");
+#endif
+	while(HAL_I2C_IsDeviceReady(hi2c, SLAVE_ADDRESS, 1, 100) != HAL_OK);
+
+#ifdef EEPROM_USE_LCD
+	LCD_Clear();
+	LCD_Set_Position(1, 1);
+	LCD_puts("Save complete!");
+#endif
+}
+
+
+DATA_STRUCTURE Load_Settings(uint16_t addr, uint16_t size){
 	DATA_STRUCTURE ds;
 	ds.BYTE.addr_high = (addr >> 8);
 	ds.BYTE.addr_low = (addr >> 0);
 
-	// Set read start address
-	HAL_I2C_Master_Transmit(&hi2c1, SLAVE_ADDRESS, (uint8_t *) &ds.data, 2, 100);
-	//while(HAL_I2C_IsDeviceReady(&hi2c1, SLAVE_ADDRESS, 5, 100) != HAL_OK);
+#ifdef EEPROM_USE_LCD
+	// Need initialize before.
+	LCD_Clear();
+	LCD_Set_Position(1, 2);
+	LCD_puts("Wait EEPROM...");
+#endif
+	while(HAL_I2C_IsDeviceReady(hi2c, SLAVE_ADDRESS, 1, 10) != HAL_OK);
 
-	HAL_I2C_Master_Receive(&hi2c1, SLAVE_ADDRESS, (uint8_t *) &ds.data, 5, 100);
+	// Set read start address
+	HAL_I2C_Master_Transmit(hi2c, SLAVE_ADDRESS, (uint8_t *) &ds.data, 2, 100);
+#ifdef EEPROM_USE_LCD
+	LCD_Clear();
+	LCD_Set_Position(1, 1);
+	LCD_puts("Transmit addr...");
+	LCD_Set_Position(1, 2);
+	LCD_puts("Wait EEPROM...");
+#endif
+	while(HAL_I2C_IsDeviceReady(hi2c, SLAVE_ADDRESS, 1, 10) != HAL_OK);
+
+	// Skip addr pointer
+	HAL_I2C_Master_Receive(hi2c, SLAVE_ADDRESS, (uint8_t *) &ds.data[2], size, 100);
+#ifdef EEPROM_USE_LCD
+	LCD_Clear();
+	LCD_Set_Position(1, 1);
+	LCD_puts("Write done!");
+	LCD_Set_Position(1, 2);
+	LCD_puts("Wait EEPROM...");
+#endif
+	while(HAL_I2C_IsDeviceReady(hi2c, SLAVE_ADDRESS, 1, 10) != HAL_OK);
+
 	return ds;
 }
