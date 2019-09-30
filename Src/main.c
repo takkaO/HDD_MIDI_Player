@@ -297,8 +297,8 @@ int main(void) {
 			/* Adjust volume */
 			if (HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin) == GPIO_PIN_RESET) {
 				volume =
-						(Get_Volume() + volume_step) > 100 ?
-								volume_step : Get_Volume() + volume_step;
+						(volume + volume_step) > 100 ?
+								volume_step : volume + volume_step;
 				op_state = OP_SWITCH1_BUSY;
 				next_operation = OP_CONTROL_VOLUME;
 			} else if (HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin) == GPIO_PIN_RESET) {
@@ -350,7 +350,6 @@ int main(void) {
 					ds.BYTE.addr_low = 0x00;
 					Save_Settings(ds, EEPROM_DATA_STRUCTURE_LEN);
 				}
-				yes_no = NO;	// reset state
 				op_state = OP_SWITCH2_BUSY;
 				next_operation = OP_DISPLAY_HDD_STATE;
 			}
@@ -363,9 +362,16 @@ int main(void) {
 				next_operation = OP_SYSTEM_RESET;
 			} else if (HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin) == GPIO_PIN_RESET) {
 				if (yes_no == YES) {
+					Change_PlayMethod(Get_PlayMethod());	// STOP Melody
+					LCD_Change_Mode(SYNC);
+					LCD_Clear();
+					LCD_printf(1, "Reboot...");
+					HAL_Delay(3000);
 					HAL_NVIC_SystemReset();
 					// System reset!
 				}
+				op_state = OP_SWITCH2_BUSY;
+				next_operation = OP_DISPLAY_HDD_STATE;
 			}
 			break;
 		case OP_DISPLAY_HDD_STATE:
@@ -388,6 +394,7 @@ int main(void) {
 					break;
 				case OP_CONTROL_VOLUME:
 					LCD_printf(2, "> Control volume");
+					volume = Get_Volume();
 					break;
 				case OP_CHANGE_PLAY_METHOD:
 					LCD_printf(2, "> Alter p-method");
@@ -396,6 +403,14 @@ int main(void) {
 				case OP_SWITCH_EN_DIS_HDD:
 					LCD_printf(2, "> HDD en/dis");
 					hdd_num = 0;
+					break;
+				case OP_SAVE_SETTINGS:
+					LCD_printf(2, "> Save settings");
+					yes_no = NO;
+					break;
+				case OP_SYSTEM_RESET:
+					LCD_printf(2, "> System reset");
+					yes_no = NO;
 					break;
 				case OP_DISPLAY_HDD_STATE:
 					LCD_printf(2, "> Return");
@@ -409,7 +424,7 @@ int main(void) {
 			case OP_CONTROL_VOLUME:
 				LCD_Clear();
 				LCD_printf(1, "Control volume");
-				LCD_printf(2, "Volume %3d %%", Get_Volume());
+				LCD_printf(2, "Volume %3d %%", volume);
 				break;
 			case OP_CHANGE_PLAY_METHOD:
 				LCD_Clear();
@@ -424,12 +439,12 @@ int main(void) {
 			case OP_SAVE_SETTINGS:
 				LCD_Clear();
 				LCD_printf(1, "Save settings");
-				LCD_printf(2, "save? %s", yes_no == YES ? "YES" : "NO");
+				LCD_printf(2, "save? > %s", yes_no == YES ? "YES" : "NO");
 				break;
 			case OP_SYSTEM_RESET:
 				LCD_Clear();
 				LCD_printf(1, "System reset");
-				LCD_printf(2, "reset? %s", yes_no == YES ? "YES" : "NO");
+				LCD_printf(2, "reset? > %s", yes_no == YES ? "YES" : "NO");
 				break;
 			case OP_DISPLAY_HDD_STATE:
 				Show_HDD_Status();

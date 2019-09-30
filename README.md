@@ -19,3 +19,8 @@ Up to 4 HDDs can be played using STM32F1 ([Blue Pill](https://ht-deko.com/arduin
 - STM32F1 (Blue Pill)
 - SW4STM32
 - CubeMX 5.3.0
+
+## TODO
+- Implement non-blocking EEPROM Read/Write
+- Implement change order htim
+- Play chords only single HDD 
