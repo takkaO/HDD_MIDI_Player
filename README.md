@@ -11,6 +11,7 @@ Up to 4 HDDs can be played using STM32F1 ([Blue Pill](https://ht-deko.com/arduin
 - 音量調節機能
 - HDDの個別有効化/無効化選択機能
 <br />  
+
 - Equipped with 2 modes. One is part fixing mode and the other is the part flexible mode.
 - Volume control.
 - Can be select individual enable / disable of HDD.
